@@ -16,13 +16,13 @@ library(dplyr)
 #for each variable into the names in order to pull all possibly misnamed 
 ##data for each species and for our target species
 {
-  FRUSH <- c("Butomus umbellatus")
+  FRUSH <- c("Butomus umbellatus", "Butomus caesalpini Neck." , "Butomus floridus Gaertn." , "Butomus scutariensis Rohlena" , "Butomus umbellatus f. albiflorus F.Fromm" , "Butomus umbellatus f. natans V.V.Petrovsky" , "Butomus umbellatus f. submersus Glück" , "Butomus umbellatus f. terrestris Glück" , "Butomus umbellatus f. umbellatus" , "Butomus umbellatus var. minor Ledeb." , "Butomus umbellatus var. parviflorus Buchenau" , "Butomus umbellatus var. scutariensis Rohlena" , "Butomus umbellatus var. vallisneriifolia Sagorski" , "Butomus vulgaris Gueldenst.")
   SS <- c("Nitellopsis obtusa")
-  CB <- c("Cyperus blepharoleptos", "Oxycaryum cubense", "Scirpus cubensis", "Anosporum cubense")
+  CB <- c("Cyperus blepharoleptos Steud.", "Cyperus blepharoleptos", "Anosporum ablepharum (Griseb.) Maury ex Micheli", " Anosporum cubense (Poepp. & Kunth) Boeckeler", " Anosporum cubense var. gracile Boeckeler", " Anosporum paraguayense Maury", " Anosporum piliferum Maury", " Anosporum schinzii Boeckeler", " Courtoisia olivacea Boeckeler", " Crepidocarpus cubensis (Poepp. & Kunth) Klotzsch", " Crepidocarpus cubensis (Poepp. & Kunth) Klotzsch ex Boeckeler", " Crepidocarpus schinzii Klotzsch", " Crepidocarpus schinzii Klotzsch ex Boeckeler", " Eleocharis paraguayensis Maury, 1889", " Isolepis echinocephala Oliv.", " Kyllinga scirpina Rchb. ex C.B.Clarke", " Kyllinga scirpina Rchb., 1828", " Mariscus foliosissimus Steud.", " Oxycaryum cubense (Poepp. & Kunth) Lye", " Oxycaryum cubense (Poepp. & Kunth) Palla", " Oxycaryum cubense f. paraguayense (Maury) Pedersen", " Oxycaryum guianense Palla", " Oxycaryum paraguayense (Maury) Palla", " Oxycaryum piliferum (Maury) Palla", " Oxycaryum schinzii (Boeckeler) Palla", " Oxycaryum schomburgkianum Nees", " Pseudomariscus olivaceus (Boeckeler) Rauschert", " Scirpus ablepharus Griseb.", " Scirpus cubensis Poepp. & Kunth", " Scirpus cubensis var. gracilis (Boeckeler) Beetle", " Scirpus cubensis var. minor C.Wright", " Scirpus cubensis var. paraguayensis (Maury) Kük.", " Scirpus cubensis var. paraguayensis (Maury) Kük. ex Barros", " Scirpus paraguayensis (Maury) Herter", " Scirpus pilifer (Maury) Pickel", " Scirpus piliferus (Maury) Pickel")
   }
 
 Species_Pull <- function(x){
-  occ(query = x, from = c('idigbio', 'bison'),limit = 70000, has_coords = T)
+  occ(query = x, from = c('gbif', 'idigbio', 'bison'),limit = 70000, has_coords = T)
 }
 
 ## This can be ran all at once for all the species 
@@ -32,11 +32,15 @@ Species_Pull <- function(x){
   CB_data <- Species_Pull(CB)
 }
 
-
 #### Processing spocc download
-## The names for Helianthus were verified manually using the Plant List
+## The synonyms for Butomus and Oxycaryum were verified manually using World Flora Online
+## and synonyms for Nitellopsis were checked using literature 
 # Functions can be made to make this quicker!
 {
+  But_umb_DF <- occ2df(FR_data) 
+  But_umb_DF$name <- "Butomus umbellatus"
+  Sta_sto_DF <- occ2df(SS_data) 
+  Sta_sto_DF$name <- ""
   But_umb_DF <- occ2df(FR_data) 
   But_umb_DF$name <- "Butomus umbellatus"
 }
