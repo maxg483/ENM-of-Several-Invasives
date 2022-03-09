@@ -1,0 +1,157 @@
+# Occurrence_Data_Cleaning.R
+## Occurrence Data Cleaning
+## Modified based on script written by Charlotte Germain-Aubrey.
+## Modified and created by ML Gaynor
+## Further edited by Max Gebhart
+
+### Load Packages
+library(dplyr)
+library(tidyr)
+library(rjson)  
+library(RCurl) 
+library(raster)
+library(sp)
+library(CoordinateCleaner)
+library(rgeos)
+library(spatstat)
+
+### Load data files
+## While editing the code it is better to use the TESTER dataset in order
+## to prevent any unwanted changes within the master data
+Tester.raw.data <- read.csv("Occurrence/Butomus_umbellatus - Copy.csv")
+raw.data <- read.csv("Occurrence/Ultima.csv")
+head(raw.data)
+
+
+#### Exploring the datafile 
+##### How many species are included in this file?
+## Should only be 3 but let's make sure there aren't different names still
+
+(species_count <- raw.data %>%
+    group_by(Species) %>%
+    tally())
+
+
+### Date Cleaning
+# In addition to taxonmy fixes, we need to check the format of other columns, like dates.
+# If you noticed above, when the year is missing there is an odd symbol. Lets replace that symbol with "NA"
+### This step was skipped due to differences in formatting between all sources and USGS 
+{raw.data$date <- gsub("\\N", NA, raw.data$date)
+
+## Is there any other issues? 
+# Visualize the year and data associated. 
+
+(year_count <- raw.data %>%
+    group_by(date) %>%
+    tally())
+
+write.csv(year_count, "NA_Data/Year_Count071520.csv")
+}
+
+#Instead we will only use our names and geographic data so let's convert that from the Ultima file
+
+raw.data <- Ultima[, 1:3] 
+write.csv(Ultima, "Occurrence/New Ultima.csv")
+
+### Location Cleaning
+#### Precision
+# How precise is the locality information? 
+
+# Precision is influenced by the number of decimal places associated with latitude and longitude. 
+# See below how degree and distance are related. 
+
+location_table <- data.frame(places = c(0,1,2,3,4), 
+                             degree = c(1, 0.1, 0.01, 0.001, 0.0001), 
+                             distance = c("111 km", "11.1 km", "1.11 km", "111 m", "11.1 m"))
+
+location_table 
+
+# Here we are going to round to two decimal points. 
+
+{(raw.data$latitude <- round(raw.data$latitude, digits = 2))
+  raw.data$longitude <- round(raw.data$longitude, digits = 2)}
+
+#### Removing impossible points
+
+new.data <- raw.data %>%
+  filter(latitude != 0, longitude != 0)
+
+# Remove points that are botanical gardens and other institutions 
+# that could skew data 
+## The default is 100m away 
+
+newer.data <- cc_inst(new.data, lon = "longitude", lat = "latitude", species = "Species")
+
+#### Removing duplicates
+
+newest_data <- newer.data %>%
+  distinct
+head(newest_data) 
+
+#### Trimming to the desired area 
+# Our desired area is North America
+# Using the package **raster**  we are able to create a raster layer of North America
+#If you want to download other countries using getData, check out the [avaliable maps](https://gadm.org/maps.html).
+{
+# name = 'GADM' which is Database of Global Administrative Areas
+# level = 2 gives the  level of subdivision (States)
+
+Canada <- getData('GADM', country='CAN', level=0)
+U.S.A <- getData('GADM', country='USA', level=0)
+
+# Next, convert merged dataset unique into a spatial file. 
+
+xy_data <- data.frame(x = newest_data$longitude, y = newest_data$latitude)
+coordinates(xy_data) <- ~ x + y
+proj4string(xy_data) <- crs("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+
+# Extract the values of the points for the North America polygons.
+# Then, recombine everything to gather all data. 
+# Next, filter for only the points in North America, select the columns needed for MaxEnt input, and rename the new names as simply 'species'.
+overU <- over(xy_data, U.S.A)
+overC <- over(xy_data, Canada)
+
+totalCA <- cbind(newest_data, overC)
+totalUS <- cbind(newest_data, overU)
+
+Canada_points <- totalCA %>%
+  filter(GID_0 == "CAN") %>%
+  dplyr::select(Species, longitude, latitude) 
+
+USA_points <- totalUS %>%
+  filter(GID_0 == "USA") %>%
+  dplyr::select(Species, longitude, latitude)
+
+#rename(replace = c("species" = "new")) # AEM EDIT
+
+# We need a csv with only species, lat, long for MaxEnt input
+write.csv(rbind.data.frame(Canada_points, USA_points), "Occurrence/UltimaCleaned.csv", row.names = FALSE)
+}
+
+write.csv(newest_data, "Occurrence/UltimaCleaned.csv")
+
+## Make this data 1 point per pixel!
+cleaned <- read.csv("Occurrence/UltimaCleaned.csv")
+
+species_count <- unique(cleaned$name)
+
+#Establish the resolution you want to filter towards
+
+bio1_l <- raster("Soil, Climate, and Water/wc2.1_30s_bio_1.tif")
+bio1 <- raster(bio1_l)
+rasterResolution <- max(res(bio1))
+
+path <- "Occurrence/FullyScrubbed/"
+
+for(i in 1:3){
+  spec <- species_count[[i]]
+  specdata <- cleaned %>%
+    filter(name == spec)
+  while(min(nndist(specdata[,2:3])) < rasterResolution){
+    nnD <- nndist(specdata[,2:3])
+    specdata <- specdata[-(which(min(nnD) == nnD)[1]),]
+  }
+  filed <- paste(path,  spec,".csv")
+  file <- gsub(" ", "", filed)
+  write.csv(specdata, file)
+}
