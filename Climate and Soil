@@ -1,4 +1,261 @@
 
+## Original script by AE Melton. 
+### Modified and created by ML Gaynor 
+### Edited by Max Gebhart
+
+# Load Packages 
+library(maptools)
+library(raster)
+library(rgdal)
+library(sp)
+library(maps)
+library(mapproj)
+library(gdalUtils)
+library(GSIF)
+library(ggplot2)
+library(alphahull)
+library(gtools)
+library(rgeos)
+library(rnaturalearth)
+
+
+# Load Climate and Soil layers
+{
+  alt_l <- raster("NA_Data/Climate Data/wc2.1_30s_elev.tif")
+  bio1_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_1.tif")
+  bio2_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_2.tif")
+  bio3_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_3.tif")
+  bio4_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_4.tif")
+  bio5_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_5.tif")
+  bio6_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_6.tif")
+  bio7_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_7.tif")
+  bio8_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_8.tif")
+  bio9_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_9.tif")
+  bio10_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_10.tif")
+  bio11_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_11.tif")
+  bio12_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_12.tif")
+  bio13_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_13.tif")
+  bio14_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_14.tif")
+  bio15_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_15.tif")
+  bio16_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_16.tif")
+  bio17_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_17.tif")
+  bio18_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_18.tif")
+  bio19_l <- raster("NA_Data/Climate Data/wc2.1_30s_bio_19.tif")
+  BDOD <- raster("NA_Data/Climate Data/North_America_bdod_15-30cm_mean.tif")
+  CEC <- raster("NA_Data/Climate Data/North_America_cec_15-30cm_mean.tif")
+  CFVO <- raster("NA_Data/Climate Data/North_America_cfvo_15-30cm_mean.tif")
+  CLAY <- raster("NA_Data/Climate Data/North_America_clay_15-30cm_mean.tif")
+  NIT <- raster("NA_Data/Climate Data/North_America_nitrogen_15-30cm_1km.tif")
+  PHH20 <- raster("NA_Data/Climate Data/North_America_phh2o_15-30cm_mean.tif")
+  SILT <- raster("NA_Data/Climate Data/North_America_silt_15-30cm_mean.tif")
+  SAND <- raster("NA_Data/Climate Data/North_America_sand_15-30cm_mean.tif")
+  CARBON <- raster("NA_Data/Climate Data/North_America_soc_15-30cm_mean.tif")
+}
+
+
+# Define desired extent
+## Before cropping our layers we will also explore a spatial shape of our points
+## this shape will use the geographic points used for Maxent and 
+# this will allow for a smaller area for the climatic layers to be cropped onto 
+# rather than cropping it onto an entire continent for only a smaller area
+Hel_occpoints <- read.csv("NA_Data/OccurrenceData/Cleaned/Helianthus Reduced.csv")
+points <- SpatialPoints(Hel_occpoints[,2:3])
+hull <- gConvexHull(points)
+
+# A buffer can also be drawn to include more area around the Maxent points
+# which prevents possible points from being removed 
+## increasing the buffer width will make the shape of the convex hull more round!
+hullnbuffer <- gBuffer(hull, width = 2)
+
+NorAme <- map(database = "world")
+
+# This can help visualize the convex hull with or without the buffer onto a map
+
+plot(NorAme)
+plot(hull, add = TRUE, col = "red")
+plot(hullnbuffer, add = TRUE, col = "green")
+
+## We will make a general extent in order to decrease the amount of decimals to make similar layer sizes
+e <- extent(-130, -59, 13, 59)
+ex <- as(e, "SpatialPolygons")
+
+# Crop bioclim layers to the desired extent
+# Visualize the first layer
+plot(alt_l)
+
+## First, mask the bioclim layer with North America
+alt <- mask(alt_l, ex)
+
+##Then crop the layers 
+alt <- crop(alt, extent(e))
+
+## Visualize the masked layers 
+plot(alt)
+
+## Now save the layer - note we already saved these layers for you, so you have to overwrite the file to save yours
+writeRaster(alt, "NA_Data/Climate Data/PresentLayers/GeneralProj/alt.asc", format="ascii", overwrite = TRUE)
+
+{
+  # Repeat with all additional files 
+  bio1 <- mask(bio1_l, ex)
+  bio1 <- crop(bio1, extent(e))
+  #writeRaster(bio1, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio1.asc", format="ascii")
+  
+  bio2 <- mask(bio2_l, ex)
+  bio2 <- crop(bio2, extent(e))
+  #writeRaster(bio2, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio2.asc", format="ascii")
+  
+  bio3 <- mask(bio3_l, ex)
+  bio3 <- crop(bio3, extent(e))
+  #writeRaster(bio3, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio3.asc", format="ascii")
+  
+  bio4 <- mask(bio4_l, ex)
+  bio4 <- crop(bio4, extent(e))
+  #writeRaster(bio4, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio4.asc", format="ascii")
+
+  bio5 <- mask(bio5_l, ex)
+  bio5 <- crop(bio5, extent(e))
+  #writeRaster(bio5, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio5.asc", format="ascii")
+  
+  bio6 <- mask(bio6_l, ex)
+  bio6 <- crop(bio6, extent(e))
+  #writeRaster(bio6, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio6.asc", format="ascii")
+  
+  bio7 <- mask(bio7_l, ex)
+  bio7 <- crop(bio7, extent(e))
+  #writeRaster(bio7, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio7.asc", format="ascii")
+  
+  bio8 <- mask(bio8_l, ex)
+  bio8 <- crop(bio8, extent(e))
+  #writeRaster(bio8, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio8.asc", format="ascii")
+  
+  bio9 <- mask(bio9_l, ex)
+  bio9 <- crop(bio9, extent(e))
+  #writeRaster(bio9, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio9.asc", format="ascii")
+  
+  bio10 <- mask(bio10_l, ex)
+  bio10 <- crop(bio10, extent(e))
+  #writeRaster(bio10, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio10.asc", format="ascii")
+  
+  bio11 <- mask(bio11_l, ex)
+  bio11 <- crop(bio11, extent(e))
+  #writeRaster(bio11, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio11.asc", format="ascii")
+  
+  bio12 <- mask(bio12_l, ex)
+  bio12 <- crop(bio12, extent(e))
+  #writeRaster(bio12, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio12.asc", format="ascii")
+  
+  bio13 <- mask(bio13_l, ex)
+  bio13 <- crop(bio13, extent(e))
+  #writeRaster(bio13, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio13.asc", format="ascii")
+  
+  bio14 <- mask(bio14_l, ex)
+  bio14 <- crop(bio14, extent(e))
+  #writeRaster(bio14, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio14.asc", format="ascii")
+  
+  bio15 <- mask(bio15_l, ex)
+  bio15 <- crop(bio15, extent(e))
+  #writeRaster(bio15, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio15.asc", format="ascii")
+  
+  bio16 <- mask(bio16_l, ex)
+  bio16 <- crop(bio16, extent(e))
+  #writeRaster(bio16, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio16.asc", format="ascii")
+  
+  bio17 <- mask(bio17_l, ex)
+  bio17 <- crop(bio17, extent(e))
+  #writeRaster(bio17, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio17.asc", format="ascii")
+  
+  bio18 <- mask(bio18_l, ex)
+  bio18 <- crop(bio18, extent(e))
+  #writeRaster(bio18, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio18.asc", format="ascii")
+  
+  bio19 <- mask(bio19_l, ex)
+  bio19 <- crop(bio19, extent(e))
+  #writeRaster(bio19, "NA_Data/Climate Data/PresentLayers/GeneralProj/bio19.asc", format="ascii")
+}
+  
+## The soil layers require a bit more work to change them 
+## To match them to our climate layers we reproject them with the +proj=longlat crs code and resample their dimensions to match 
+## the climate layer dimensions
+{
+  BDOD <- projectRaster(BDOD, res = res(bio1), crs = "+proj=longlat")
+  BDOD <- resample(BDOD, bio1)
+  BDOD <- mask(BDOD, ex)
+  BDOD <- crop(BDOD, extent(e))
+  #writeRaster(BDOD, "NA_Data/Climate Data/PresentLayers/GeneralProj/BDOD.asc", format="ascii")
+  
+  CEC <- projectRaster(CEC, res = res(bio1), crs="+proj=longlat")
+  CEC <- resample(CEC, bio1)
+  CEC <- mask(CEC, ex)
+  CEC <- crop(CEC, extent(e))
+  #writeRaster(CEC, "NA_Data/Climate Data/PresentLayers/GeneralProj/CEC.asc", format="ascii")
+  
+  CFVO <- projectRaster(CFVO, res = res(bio1), crs="+proj=longlat")
+  CFVO <- resample(CFVO, bio1)
+  CFVO <- mask(CFVO, ex)
+  CFVO <- crop(CFVO, extent(e))
+  #writeRaster(CFVO, "NA_Data/Climate Data/PresentLayers/GeneralProj/CFVO.asc", format="ascii")
+  
+  CLAY <- projectRaster(CLAY, res = res(bio1), crs="+proj=longlat")
+  CLAY <- resample(CLAY, bio1)
+  CLAY <- mask(CLAY, ex)
+  CLAY <- crop(CLAY, extent(e))
+  #writeRaster(CLAY, "NA_Data/Climate Data/PresentLayers/GeneralProj/CLAY.asc", format="ascii")
+  
+  NIT <- projectRaster(NIT, res = res(bio1), crs="+proj=longlat")
+  NIT <- resample(NIT, bio1)
+  NITRO <- mask(NIT, ex)
+  NITRO <- crop(NITRO, extent(e))
+  #writeRaster(NITRO, "NA_Data/Climate Data/PresentLayers/GeneralProj/NITROGEN.asc", format="ascii")
+
+  PHH20 <- projectRaster(PHH20, res = res(bio1), crs="+proj=longlat")
+  PHH20 <- resample(PHH20, bio1)
+  PHH20 <- mask(PHH20, ex)
+  PHH20 <- crop(PHH20, extent(e))
+  #writeRaster(PHH20, "NA_Data/Climate Data/PresentLayers/GeneralProj/PHH2O.asc", format="ascii")
+  
+  SILT <- projectRaster(SILT, res = res(bio1), crs="+proj=longlat")
+  SILT <- resample(SILT, bio1)
+  SILT <- mask(SILT, ex)
+  SILT <- crop(SILT, extent(e))
+  #writeRaster(SILT, "NA_Data/Climate Data/PresentLayers/GeneralProj/SILT.asc", format="ascii")
+  
+  SAND <- projectRaster(SAND, res = res(bio1), crs="+proj=longlat")
+  SAND <- resample(SAND, bio1)
+  SAND <- mask(SAND, ex)
+  SAND <- crop(SAND, extent(e))
+  #writeRaster(SAND, "NA_Data/Climate Data/PresentLayers/GeneralProj/SAND.asc", format="ascii")
+  
+  CARBON <- projectRaster(CARBON, res = res(bio1), crs="+proj=longlat")
+  CARBON <- resample(CARBON, bio1)
+  CARB <- mask(CARBON, ex)
+  CARBON <- crop(CARB, extent(e))
+  #writeRaster(CARBON, "NA_Data/Climate Data/PresentLayers/GeneralProj/SOC.asc", format="ascii")
+}
+
+
+# Select layers for MaxEnt
+## We only want to include layers that are not highly correlated.
+## To assess which layers we will include, we want to look at the pearson correlation coefficient among layers.
+### Stack all layers
+rasterlist <- list.files(path = "NA_Data/Climate Data/PresentLayers/GeneralProj/", full.names = TRUE)
+
+stack <- stack(rasterlist)
+stacking <- stack(alt, bio1, bio2, bio3, bio4, bio5, bio6, bio7, bio8, bio9, bio10, bio11, bio12, bio13, bio14, bio15, bio16, bio17, bio18, bio19, BDOD, CARBON, CEC, CFVO, CLAY, NITRO, PHH20, SAND, SILT)
+
+### Then calculate the correlation coefficient
+corr <- layerStats(stacking, 'pearson', na.rm=TRUE)
+
+### Isolate only the pearson correlation coefficient 
+c <- corr$`pearson correlation coefficient`
+
+c <- abs(c)
+
+### Write file and view in excel
+write.csv(c, "NA_data/Climate Data/PresentLayers/GeneralProj/LayerCorrelations.csv")
+
+## Highly correlated layers (> |0.80|) can impact the statistical significance 
+## of the niche models and therefore must be removed. 
 
 
 
