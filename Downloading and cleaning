@@ -51,5 +51,13 @@ Species_Pull <- function(x){
   write.csv(Cub_bul_DF, "Occurrence/Cyperus_blepharoleptos.csv", row.names = FALSE)
 }
 
+{
+  FR <- read.csv("Occurrence/Butomus_umbellatus.csv")
+  CB <- read.csv("Occurrence/Cyperus_blepharoleptos.csv")
+  SS <- read.csv("Occurrence/Nitellopsis_obtusa.csv")
+  Ultima <- rbind.data.frame(FR, CB, SS)
+  write.csv(Ultima, "Occurrence/Ultima.csv")
+  }
+
 
 
